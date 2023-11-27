@@ -15,3 +15,6 @@ spec:
                 name: http
                 port:
                   name: http
+  tls:
+    - hosts: []
+      secretName: stalwart-tls
