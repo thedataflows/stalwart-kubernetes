@@ -11,7 +11,7 @@ Will deploy in a kubernetes cluster:
 
 ## Requirements
 
-- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq` (v4 and above), `git`, `curl`, `unzip` (Windows)
+- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq` [mikefarah's v4 and above](https://github.com/mikefarah/yq/releases), `git`, `curl`, `unzip` (Windows)
 - Working kubernetes cluster
 - Optional:
   - For helm chart generation: [Helmify](https://github.com/arttor/helmify)
@@ -25,26 +25,25 @@ Will deploy in a kubernetes cluster:
 
 1. Fork this repository
 2. Clone it locally `git clone https://github.com/change-me/stalwart-kubernetes.git`
-3. Generate configuration: `make config` that will:
-   - overwrite everything in [config/](config/)
-   - download and run `stalwart-install` in interactive mode
-   - generate DKIM keys in `config/dkim` (excluded from git because contains secrets)
+3. Generate configuration: `make config` will download and run `stalwart-install` in interactive mode. In turn this will:
+   - Generate [config/](config/)
+   - Generate DKIM cert amd key in `config/etc/dkim` (excluded from git because contains secrets)
 4. Update the new stalwart config files as needed:
    - Default user directory is sql:
 
      ```toml
-     config.toml:15
+     config/etc/config.toml:15
      ...
      "%{BASE_PATH}%/etc/directory/sql.toml",
      ...
      ```
 
    - Can use [`ldap` or `memory`](https://stalw.art/docs/category/types) instead
-5. Update `*.patch.yaml` files with your specific configuration:
+5. Update `config/*.patch.yaml` files with your specific configuration:
    - Set `storageClassName` and storage size
    - Enable [listestream](https://litestream.io/guides/kubernetes/) by commenting out the removal of `container/1` in `statefulset.patch.yaml`
 6. `git commit -am "Set up stalwart for domain yourdomain.org" && git push`
-7. Deploy manually: `make deploy`
+7. Deploy manually: `make install`
    - Will deploy in the current kubernetes context. Assumes `kubectl` is present and a local kuberenes context is configured
    - Alternatively, you can just generate the manifests: `make kustomize` and inspect them in `out/` directory.
 8. Deploy using GitOps (recommended):
@@ -87,7 +86,7 @@ Will deploy in a kubernetes cluster:
              name: stalwart
        ```
 
-     - Alternatively, copy this repo with everything configured in your gitops repo
+     - Alternatively, copy `config/` in your gitops repo
      - Or generate manifests with `make kustomize` and copy them from `out/` to your gitops repo and encrypt the secrets with SOPS
 
    - Using [ArgoCD](https://argoproj.github.io/cd/):
