@@ -93,6 +93,8 @@ export CONFIG_FILES
 
 envsubst < templates/config-kustomization.yaml > "$CONFIG_DIR/kustomization.yaml"
 
+sed -E 's,^# ,,g' templates/kustomization.yaml > kustomization.yaml
+
 ## Generate volumeMounts patch
 echo "$CONFIG_FILES" | yq --from-file templates/volume-mounts.yq > "$CONFIG_DIR/volume-mounts.patch.yaml"
 

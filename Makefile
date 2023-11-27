@@ -7,6 +7,7 @@ kustomize:
 .PHONY: clean
 clean:
 	rm -rf stalwart-install* out/ chart/ config/
+	cp templates/kustomization.yaml kustomization.yaml
 
 .PHONY: config
 config:
