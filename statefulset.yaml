@@ -34,10 +34,13 @@ spec:
               done
               ## Copy bootstrap data
               { set +x; } 2>/dev/null
-              for f in $(find /tmp/bootstrap -name '*.sqlite3' -type f); do
-                DST=/opt/stalwart-mail/data/${f##*/}
+              for f in $(find /tmp/bootstrap -name '*.sqlite3.gz' -type f); do
+                f=${f##*/}
+                DST=/opt/stalwart-mail/data/${f%.*}
                 if [[ ! -f "$DST" ]]; then
-                  cp -v "$f" "$DST"
+                  set -x
+                  gunzip -d /tmp/bootstrap/$f -c > "$DST"
+                  { set +x; } 2>/dev/null
                 else
                   echo "'$DST' already exists"
                 fi
@@ -86,6 +89,8 @@ spec:
               mountPath: /opt/stalwart-mail/data
             - name: dkim
               mountPath: /opt/stalwart-mail/etc/dkim
+            - name: certs
+              mountPath: /opt/stalwart-mail/etc/certs
         - name: litestream
           image: litestream/litestream:latest
           args:
@@ -96,18 +101,11 @@ spec:
             - name: litestream
               mountPath: /etc/litestream.yml
               subPath: litestream.yml
-          env:
-            ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
-            - name: LITESTREAM_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: litestream-s3
-                  key: ACCESS_KEY_ID
-            - name: LITESTREAM_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: litestream-s3
-                  key: SECRET_ACCESS_KEY
+          envFrom:
+            - prefix: LITESTREAM_
+              secretRef:
+                ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
+                name: litestream-s3
           ports:
             - name: metrics
               containerPort: 9090
@@ -120,8 +118,8 @@ spec:
         - name: basedir
           emptyDir: {}
         - name: bootstrap
-          configMap:
-            name: stalwart-bootstrap
+          secret:
+            secretName: stalwart-bootstrap
         - name: config
           configMap:
             name: stalwart
@@ -134,6 +132,9 @@ spec:
         - name: litestream
           configMap:
             name: litestream
+        - name: certs
+          secret:
+            secretName: stalwart-tls
       nodeSelector: {}
       tolerations: []
   volumeClaimTemplates:

@@ -8,6 +8,11 @@ secretGenerator:
     literals:
       - ACCESS_KEY_ID=
       - SECRET_ACCESS_KEY=
+  - name: stalwart-bootstrap
+    options:
+      disableNameSuffixHash: true
+    files:
+$SQLITE_FILES
   - name: dkim
     options:
       disableNameSuffixHash: true
@@ -18,9 +23,6 @@ configMapGenerator:
   - name: litestream
     files:
       - litestream.yml=litestream.yaml
-  - name: stalwart-bootstrap
-    files:
-$SQLITE_FILES
   - name: stalwart
     files:
 $CONFIG_FILES
