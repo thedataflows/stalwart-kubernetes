@@ -4,7 +4,7 @@ dbs:
     replicas: &replicas
       - type: s3
         bucket: stalwart-mail
-        path: "default"
+        path: default
         region: region01
         endpoint: http://minio:9000
   - path: /opt/stalwart-mail/data/index.sqlite3

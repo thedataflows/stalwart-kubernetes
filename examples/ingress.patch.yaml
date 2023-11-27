@@ -22,13 +22,9 @@
 #         name: oauth2-proxy-external
 #         port:
 #           number: 80
-## Set annotations to use specific cert-manager cluster issuer
+## Set annotations to use specific cert-manager cluster issuer and specific external-dns target
 # - op: add
 #   path: /metadata/annotations
 #   value:
 #     cert-manager.io/cluster-issuer: issuer-name
-## Set annotations to use specific external-dns target
-# - op: add
-#   path: /metadata/annotations
-#   value:
 #     external-dns.alpha.kubernetes.io/target: yourdomain.org

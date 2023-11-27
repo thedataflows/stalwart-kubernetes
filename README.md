@@ -11,7 +11,7 @@ Will deploy in a kubernetes cluster:
 
 ## Requirements
 
-- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq` [mikefarah's v4 and above](https://github.com/mikefarah/yq/releases), `git`, `curl`, `unzip` (Windows)
+- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq` [mikefarah's v4 and above](https://github.com/mikefarah/yq/releases), `git`, `curl`, `gzip`, `unzip` (Windows)
 - Working kubernetes cluster
 - Optional:
   - For helm chart generation: [Helmify](https://github.com/arttor/helmify)
@@ -30,9 +30,9 @@ Will deploy in a kubernetes cluster:
    - `export SECRET_ACCESS_KEY=value`
 4. Generate configuration: `make config` will download and run `stalwart-install` in interactive mode. In turn this will:
    - Download and modify stalwart toml config files in `config/etc`
-   - Generate sqlite database in `config/data`
+   - Generate sqlite databases in `config/data`
    - Generate DKIM cert amd key in `config/etc/dkim` (excluded from git because contains secrets)
-5. Update the new stalwart config files as needed:
+5. Update generated stalwart config files as needed:
    - Default user directory is sql:
 
      ```toml
@@ -42,7 +42,7 @@ Will deploy in a kubernetes cluster:
      ...
      ```
 
-   - Can use [`ldap` or `memory`](https://stalw.art/docs/category/types) instead
+   - Can use [other types](https://stalw.art/docs/category/types) instead
 6. Update `config/*.patch.yaml` files with your specific configuration:
    - Set `storageClassName` and storage size
    - Enable **litestream** by commenting out the removal of `container/1` in `config/statefulset.patch.yaml`
@@ -97,8 +97,9 @@ Will deploy in a kubernetes cluster:
    - Using [ArgoCD](https://argoproj.github.io/cd/):
      - TODO
 
-10. Uninstall manually: `kubectl delete ns stalwart`
-11. Cleanup: `make clean` will remove all generated files
+10. Setup DKIM: follow `config/etc/dkim/yourdomain.org.readme` instructions
+11. Uninstall manually: `kubectl delete ns stalwart`
+12. Cleanup: `make clean` will remove all generated files
 
 ## Helm chart
 

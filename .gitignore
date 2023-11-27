@@ -1,3 +1,4 @@
 out/
+config/data
 config/etc/dkim
 stalwart-install*
