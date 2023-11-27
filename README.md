@@ -11,7 +11,7 @@ Will deploy in a kubernetes cluster:
 
 ## Requirements
 
-- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq`, `git`, `curl`, `unzip` (Windows)
+- Utilities: `bash`, `make`, `sed`, `kubectl`, `yq` (v4 and above), `git`, `curl`, `unzip` (Windows)
 - Working kubernetes cluster
 - Optional:
   - For helm chart generation: [Helmify](https://github.com/arttor/helmify)
