@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: &name stalwart
+  labels: {}
+spec:
+  replicas: 1
+  serviceName: *name
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels: {}
+    spec:
+      initContainers:
+        - name: mail-server-init
+          image: alpine:3.18
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -ex
+              apk add jq
+              [[ "$TAG" == "latest" ]] && TAG=
+              TAG=${TAG:-$(wget https://api.github.com/repos/stalwartlabs/mail-server/releases/latest -O - | jq -r '.tag_name')}
+              wget https://github.com/stalwartlabs/mail-server/raw/$TAG/resources/config.zip
+              unzip config.zip spamfilter/* -d /opt/stalwart-mail/etc/
+              for d in bin data/blobs logs queue reports; do
+                mkdir -p /opt/stalwart-mail/$d
+              done
+          env:
+            - name: TAG
+              value: latest
+          volumeMounts:
+            - name: basedir
+              mountPath: /opt/stalwart-mail
+            - name: mail-data
+              mountPath: /opt/stalwart-mail/data
+      containers:
+        - name: mail-server
+          image: stalwartlabs/mail-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: smtp
+              containerPort: 25
+            - name: smtps
+              containerPort: 465
+            - name: submission
+              containerPort: 587
+            - name: imap
+              containerPort: 143
+            - name: imaps
+              containerPort: 993
+            - name: sieve
+              containerPort: 4190
+            - name: http
+              containerPort: 8080
+          env: []
+          resources:
+            limits:
+              cpu: 1
+              memory: 512Mi
+            # requests:
+            #   cpu: 1
+            #   memory: 512Mi
+          volumeMounts:
+            - name: basedir
+              mountPath: /opt/stalwart-mail
+            - name: mail-data
+              mountPath: /opt/stalwart-mail/data
+            - name: dkim
+              mountPath: /opt/stalwart-mail/etc/dkim
+        - name: litestream
+          image: litestream/litestream:latest
+          args:
+            - "replicate"
+          volumeMounts:
+            - name: mail-data
+              mountPath: /opt/stalwart-mail/data
+            - name: litestream
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+          env:
+            ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
+            - name: LITESTREAM_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: litestream-s3
+                  key: ACCESS_KEY_ID
+            - name: LITESTREAM_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: litestream-s3
+                  key: SECRET_ACCESS_KEY
+          ports:
+            - name: metrics
+              containerPort: 9090
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      restartPolicy: Always
+      volumes:
+        - name: basedir
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: stalwart
+        - name: dkim
+          secret:
+            secretName: dkim
+        - name: mail-data
+          persistentVolumeClaim:
+            claimName: mail-data
+        - name: litestream
+          configMap:
+            name: litestream
+      nodeSelector: {}
+      tolerations: []
+  volumeClaimTemplates:
+    - metadata:
+        name: mail-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: standard

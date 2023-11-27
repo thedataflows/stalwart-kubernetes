@@ -1,0 +1,13 @@
+## https://litestream.io/guides/kubernetes/
+dbs:
+  - path: /opt/stalwart-mail/data/accounts.sqlite3
+    replicas: &replicas
+      - type: s3
+        bucket: stalwart-mail
+        path: "default"
+        region: region01
+        endpoint: http://minio:9000
+  - path: /opt/stalwart-mail/data/index.sqlite3
+    replicas: *replicas
+  - path: /opt/stalwart-mail/data/spamfilter.sqlite3
+    replicas: *replicas

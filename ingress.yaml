@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stalwart
+  annotations: {}
+spec:
+  rules:
+    - host: patch-in-kustomization
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: http
+                port:
+                  name: http

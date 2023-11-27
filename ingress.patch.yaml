@@ -1,0 +1,31 @@
+## Set host to use specific domain
+- op: replace
+  path: /spec/rules/0/host
+  value: run make config
+## Set annotations to use specific oauth2_proxy
+# - op: add
+#   path: /metadata/annotations
+#   value:
+#     haproxy-ingress.github.io/oauth: oauth2_proxy
+#     haproxy-ingress.github.io/auth-signin: https://mail.yourdomain.org/oauth2/start?rd=%[path]
+## Add path to use specific oauth2_proxy. You will also need to add to kustomization.yaml the oauth2_proxy service.
+# - op: add
+#   path: /spec/rules/0/http/paths/-
+#   value:
+#     path: /oauth2
+#     pathType: ImplementationSpecific
+#     backend:
+#       service:
+#         name: oauth2-proxy-external
+#         port:
+#           number: 80
+## Set annotations to use specific cert-manager cluster issuer
+# - op: add
+#   path: /metadata/annotations
+#   value:
+#     cert-manager.io/cluster-issuer: issuer-name
+## Set annotations to use specific external-dns target
+# - op: add
+#   path: /metadata/annotations
+#   value:
+#     external-dns.alpha.kubernetes.io/target: yourdomain.org

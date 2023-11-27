@@ -1,0 +1,49 @@
+## Set stalwart image to specific tag
+# - op: replace
+#   path: /spec/template/spec/containers/0/image
+#   ## https://hub.docker.com/r/stalwartlabs/mail-server/tags
+#   value: stalwartlabs/mail-server:v0.4.2
+# - op: replace
+#   path: /spec/template/spec/initContainers/0/env/0/value
+#   ## https://github.com/stalwartlabs/mail-server/tags
+#   value: v0.4.2
+## Set stalwart affinity to schedule pods on specific nodes
+# - op: add
+#   path: /spec/template/spec/affinity
+#   value:
+#     podAffinity:
+#       requiredDuringSchedulingIgnoredDuringExecution:
+#         - labelSelector:
+#             matchExpressions:
+#             - key: app.kubernetes.io/component
+#               operator: In
+#               values:
+#                 - mail-server
+#         topologyKey: "kubernetes.io/hostname"
+## Set stalwart tolerations to schedule pods on tainted nodes
+# - op: add
+#   path: /spec/template/spec/tolerations/-
+#   value:
+#     effect: NoSchedule
+#     key: node-role.kubernetes.io/master
+## Set stalwart nodeSelector to schedule pods on specific nodes
+# - op: add
+#   path: /spec/template/spec/nodeSelector
+#   value:
+#     kubernetes.io/hostname: k8s-node-1
+## Set stalwart storageClassName to use specific storage class
+# - op: replace
+#   path: /spec/volumeClaimTemplates/0/spec/storageClassName
+#   value: openebs-hostpath
+## Set stalwart storage size
+# - op: replace
+#   path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+#   value: 20Gi
+## Disable litestream
+- op: remove
+  path: /spec/template/spec/containers/1
+## Set litestream image to specific tag
+# - op: replace
+#   path: /spec/template/spec/containers/1/image
+#   ## https://hub.docker.com/r/litestream/litestream/tags
+#   value: stalwartlabs/mail-server:0.3.13

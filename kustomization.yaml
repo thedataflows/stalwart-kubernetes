@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: &name stalwart
+
+commonLabels:
+  app.kubernetes.io/name: *name
+  app.kubernetes.io/instance: default
+  app.kubernetes.io/component: mail-server
+
+resources:
+  - config/
+  - namespace.yaml
+  - statefulset.yaml
+  - service.yaml
+  - ingress.yaml
+
+patches:
+  - target: &statefulset
+      kind: StatefulSet
+      name: *name
+    path: statefulset.patch.yaml
+  - target: *statefulset
+    path: volume-mounts.patch.yaml
+  - target:
+      kind: Ingress
+      name: *name
+    path: ingress.patch.yaml
