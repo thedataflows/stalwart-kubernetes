@@ -81,18 +81,36 @@ Will deploy in a kubernetes cluster:
           ```yaml
           apiVersion: kustomize.config.k8s.io/v1beta1
           kind: Kustomization
+
+          namespace: &name stalwart
+
+          commonLabels:
+            app.kubernetes.io/name: *name
+            app.kubernetes.io/instance: default
+            app.kubernetes.io/component: mail-server
+
           resources:
-            - https://github.com/change-me/stalwart-kubernetes?ref=main
-          ## Create your own local patches or copy the generated ones from config/
+            - https://github.com/thedataflows/stalwart-kubernetes?ref=v0.1.0
+            - config/
+            - secret.dkim.yaml
+            - secret.litestream-s3.yaml
+            - secret.stalwart-bootstrap.yaml
+
           patches:
-            - path: config/statefulset.patch.yaml
-              target:
+            - target: &statefulset
                 kind: StatefulSet
-                name: stalwart
+                name: *name
+              path: config/statefulset.patch.yaml
+            - target: *statefulset
+              path: config/volume-mounts.patch.yaml
+            - target:
+                kind: Ingress
+                name: *name
+              path: config/ingress.patch.yaml
           ```
 
-     - Alternatively, copy `config/` in your gitops repo
-     - Or generate manifests with `make kustomize` and copy them from `out/` to your gitops repo and encrypt the secrets with SOPS
+     - Copy `config/` in your gitops repo
+     - Alternatively, generate manifests with `kubectl kustomize -o out/`, copy the secrets and encrypt them with SOPS. Remove `out/` or exclude it from commit.
 
    - Using [ArgoCD](https://argoproj.github.io/cd/):
      - TODO
