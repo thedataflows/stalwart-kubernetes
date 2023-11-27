@@ -75,6 +75,10 @@ spec:
             - name: http
               containerPort: 8080
           env: []
+          envFrom:
+            - secretRef:
+                ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
+                name: litestream-s3
           resources:
             requests:
               cpu: 100m
