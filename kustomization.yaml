@@ -19,10 +19,10 @@ patches:
   - target: &statefulset
       kind: StatefulSet
       name: *name
-    path: statefulset.patch.yaml
+    path: config/statefulset.patch.yaml
   - target: *statefulset
-    path: volume-mounts.patch.yaml
+    path: config/volume-mounts.patch.yaml
   - target:
       kind: Ingress
       name: *name
-    path: ingress.patch.yaml
+    path: config/ingress.patch.yaml

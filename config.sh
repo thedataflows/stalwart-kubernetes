@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-set -e
+set -e -o pipefail -u
 
 OS=${OS:-$(uname -s)}
 STALWART_BASE=${STALWART_BASE:-/opt/stalwart-mail}
@@ -35,34 +35,49 @@ if ! type ./stalwart-install &>/dev/null; then
   esac
 fi
 
+CONFIG_DIR=config
+STALWART_CONFIG_DIR="$CONFIG_DIR/etc"
+
 set -x
 ## Cleanup
-rm -fr "$STALWART_BASE" common directory dkim imap jmap smtp
+rm -fr "$CONFIG_DIR"
+mkdir -p "$CONFIG_DIR"
+
 ## Run installer
-./stalwart-install -c all-in-one -p "$STALWART_BASE" -d
-cp -fr "$STALWART_BASE"/etc/* .
-{ set +x; } 2>/dev/null
-## Fix path if installer was ran on a Windows host
-case $OS in
-MINGW* | MSYS* | CYGWIN* | Windows_NT)
-  set -x
-  sed -i -E "s,(^base_path\s*=\s*\").+,\1$STALWART_BASE\"," config.toml
-  sed -i -E "s,(^(cert|private-key)\s*=\s*\").+,\1$STALWART_BASE\"," common/tls.toml
-  { set +x; } 2>/dev/null
-  ;;
-esac
+./stalwart-install -c all-in-one -p "$STALWART_CONFIG_DIR/.." -d
+## Fix paths in toml files
+sed -i -E "s,$STALWART_CONFIG_DIR/\.\.,$STALWART_BASE," "$STALWART_CONFIG_DIR/config.toml" "$STALWART_CONFIG_DIR/common/tls.toml"
 ## Enable stdoud logging
-set -x
-sed -i -E -e 's,^([^#]),#\1,g' -e '5,8s/^#//' common/tracing.toml
+sed -i -E -e 's,^([^#]),#\1,g' -e '5,8s/^#//' "$STALWART_CONFIG_DIR/common/tracing.toml"
+
+cp examples/litestream.yaml examples/statefulset.patch.yaml "$CONFIG_DIR"
+
 ## Cleanup
-rm -fr spamfilter/ certs/ directory/ldap.toml directory/memory.toml
+rm -fr \
+    "${CONFIG_DIR:?}/bin" \
+    "${CONFIG_DIR:?}/logs" \
+    "${CONFIG_DIR:?}/queue" \
+    "${CONFIG_DIR:?}/reports" \
+    "$STALWART_CONFIG_DIR/spamfilter/" \
+    "$STALWART_CONFIG_DIR/certs/" \
+    "$STALWART_CONFIG_DIR/directory/ldap.toml" \
+    "$STALWART_CONFIG_DIR/directory/memory.toml"
 { set +x; } 2>/dev/null
 
-DKIM_FILES=$(find dkim -type f -printf '      - %f=%p\n')
+DKIM_FILES=$(
+  cd "$CONFIG_DIR";
+  set -x;
+  find "etc/dkim" -type f -printf '      - %f=%p\n'
+)
 export DKIM_FILES
 
-CONFIG_FILES=$(find . -name '*.toml' -printf '      - %P=%P\n' | sed 's,/,_,')
+CONFIG_FILES=$(
+  cd "$CONFIG_DIR";
+  set -x;
+  find etc -name '*.toml' -printf '      - %P=%p\n' | sed -E 's,/([^=]+)=,_\1=,'
+)
 export CONFIG_FILES
+
 echo "apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -84,7 +99,7 @@ configMapGenerator:
     # options:
     #   disableNameSuffixHash: true
     files:
-$CONFIG_FILES" > kustomization.yaml
+$CONFIG_FILES" > "$CONFIG_DIR/kustomization.yaml"
 
 ## Generate volumeMounts patch
 echo "$CONFIG_FILES" | yq '.[] |
@@ -99,9 +114,9 @@ echo "$CONFIG_FILES" | yq '.[] |
           "subPath":. | split("=").0
         }
     }
-  ]' > ../volume-mounts.patch.yaml
+  ]' > "$CONFIG_DIR/volume-mounts.patch.yaml"
 
-## Update ingress patch
-STALWART_HOST=$(grep -E '^host' config.toml | cut -d\" -f2)
+## Generate ingress patch
+STALWART_HOST=$(grep -E '^host' "$STALWART_CONFIG_DIR/config.toml" | cut -d\" -f2)
 export STALWART_HOST
-yq '.[0].value = env(STALWART_HOST)' -i ../ingress.patch.yaml
+yq '.[0].value = env(STALWART_HOST)' examples/ingress.patch.yaml > "$CONFIG_DIR/ingress.patch.yaml"
