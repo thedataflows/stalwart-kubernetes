@@ -21,13 +21,26 @@ spec:
             - -c
             - |
               set -ex
+              ## Install required tools
               apk add jq
+              ## Deploy spamfilter config
               [[ "$TAG" == "latest" ]] && TAG=
               TAG=${TAG:-$(wget https://api.github.com/repos/stalwartlabs/mail-server/releases/latest -O - | jq -r '.tag_name')}
               wget https://github.com/stalwartlabs/mail-server/raw/$TAG/resources/config.zip
-              unzip config.zip spamfilter/* -d /opt/stalwart-mail/etc/
+              unzip -o config.zip spamfilter/* -d /opt/stalwart-mail/etc/
+              ## Create directories
               for d in bin data/blobs logs queue reports; do
                 mkdir -p /opt/stalwart-mail/$d
+              done
+              ## Copy bootstrap data
+              { set +x; } 2>/dev/null
+              for f in $(find /tmp/bootstrap -name '*.sqlite3' -type f); do
+                DST=/opt/stalwart-mail/data/${f##*/}
+                if [[ ! -f "$DST" ]]; then
+                  cp -v "$f" "$DST"
+                else
+                  echo "'$DST' already exists"
+                fi
               done
           env:
             - name: TAG
@@ -37,6 +50,8 @@ spec:
               mountPath: /opt/stalwart-mail
             - name: mail-data
               mountPath: /opt/stalwart-mail/data
+            - name: bootstrap
+              mountPath: /tmp/bootstrap
       containers:
         - name: mail-server
           image: stalwartlabs/mail-server:latest
@@ -104,6 +119,9 @@ spec:
       volumes:
         - name: basedir
           emptyDir: {}
+        - name: bootstrap
+          configMap:
+            name: stalwart-bootstrap
         - name: config
           configMap:
             name: stalwart
