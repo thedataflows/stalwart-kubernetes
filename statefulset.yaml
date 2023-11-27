@@ -58,12 +58,12 @@ spec:
               containerPort: 8080
           env: []
           resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: 1
+              cpu: 2000m
               memory: 512Mi
-            # requests:
-            #   cpu: 1
-            #   memory: 512Mi
           volumeMounts:
             - name: basedir
               mountPath: /opt/stalwart-mail
