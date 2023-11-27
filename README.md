@@ -25,10 +25,14 @@ Will deploy in a kubernetes cluster:
 
 1. Fork this repository
 2. Clone it locally `git clone https://github.com/change-me/stalwart-kubernetes.git`
-3. Generate configuration: `make config` will download and run `stalwart-install` in interactive mode. In turn this will:
-   - Generate [config/](config/)
+3. If using [listestream](https://litestream.io/guides/kubernetes/), create a bucket in your S3 compatible storage and set environment variables:
+   - `export ACCESS_KEY_ID=value`
+   - `export SECRET_ACCESS_KEY=value`
+4. Generate configuration: `make config` will download and run `stalwart-install` in interactive mode. In turn this will:
+   - Download and modify stalwart toml config files in `config/etc`
+   - Generate sqlite database in `config/data`
    - Generate DKIM cert amd key in `config/etc/dkim` (excluded from git because contains secrets)
-4. Update the new stalwart config files as needed:
+5. Update the new stalwart config files as needed:
    - Default user directory is sql:
 
      ```toml
@@ -39,52 +43,53 @@ Will deploy in a kubernetes cluster:
      ```
 
    - Can use [`ldap` or `memory`](https://stalw.art/docs/category/types) instead
-5. Update `config/*.patch.yaml` files with your specific configuration:
+6. Update `config/*.patch.yaml` files with your specific configuration:
    - Set `storageClassName` and storage size
-   - Enable [listestream](https://litestream.io/guides/kubernetes/) by commenting out the removal of `container/1` in `statefulset.patch.yaml`
-6. `git commit -am "Set up stalwart for domain yourdomain.org" && git push`
-7. Deploy manually: `make install`
+   - Enable **litestream** by commenting out the removal of `container/1` in `config/statefulset.patch.yaml`
+7. `git commit -am "Set up stalwart for domain yourdomain.org" && git push`
+8. Deploy manually: `make install`
    - Will deploy in the current kubernetes context. Assumes `kubectl` is present and a local kuberenes context is configured
    - Alternatively, you can just generate the manifests: `make kustomize` and inspect them in `out/` directory.
-8. Deploy using GitOps (recommended):
+9. Deploy using GitOps (recommended):
+
    - Using your FluxCD git repo (different from this one):
      - First time: manually create secrets containing
        - **DKIM** files:
 
-         ```bash
-         kubectl -n stalwart \
-            create secret generic dkim \
-            --from-file=config/dkim \
-            --dry-run=client \
-            -o yaml
-         ```
+            ```bash
+            kubectl -n stalwart \
+               create secret generic dkim \
+               --from-file=config/dkim \
+               --dry-run=client \
+               -o yaml
+            ```
 
        - If using **litestream**:
 
-         ```bash
-         kubectl -n stalwart \
-           create secret generic litestream-s3 \
-           --from-literal=ACCESS_KEY_ID=value \
-           --from-literal=SECRET_ACCESS_KEY=value \
-           --dry-run=client \
-           -o yaml
-         ```
+            ```bash
+            kubectl -n stalwart \
+              create secret generic litestream-s3 \
+              --from-literal=ACCESS_KEY_ID=$ACCESS_KEY_ID \
+              --from-literal=SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY \
+              --dry-run=client \
+              -o yaml
+            ```
 
        - Encrypt the secrets with [SOPS](https://github.com/getsops/sops/) and store them in your gitops repo
      - Create a `stalwart/kustomization.yaml`:
 
-       ```yaml
-       apiVersion: kustomize.config.k8s.io/v1beta1
-       kind: Kustomization
-       resources:
-         - https://github.com/change-me/stalwart-kubernetes?ref=main
-       ## Create your own local patches or change the ones in the imported repo
-       patches:
-         - path: mystatefulset.patch.yaml
-           target:
-             kind: StatefulSet
-             name: stalwart
-       ```
+          ```yaml
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - https://github.com/change-me/stalwart-kubernetes?ref=main
+          ## Create your own local patches or copy the generated ones from config/
+          patches:
+            - path: config/statefulset.patch.yaml
+              target:
+                kind: StatefulSet
+                name: stalwart
+          ```
 
      - Alternatively, copy `config/` in your gitops repo
      - Or generate manifests with `make kustomize` and copy them from `out/` to your gitops repo and encrypt the secrets with SOPS
@@ -92,8 +97,8 @@ Will deploy in a kubernetes cluster:
    - Using [ArgoCD](https://argoproj.github.io/cd/):
      - TODO
 
-9. Uninstall manually: `kubectl delete ns stalwart`
-10. Cleanup: `make clean` will remove all generated files
+10. Uninstall manually: `kubectl delete ns stalwart`
+11. Cleanup: `make clean` will remove all generated files
 
 ## Helm chart
 

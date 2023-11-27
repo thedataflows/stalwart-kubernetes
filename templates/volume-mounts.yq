@@ -1,0 +1,14 @@
+.[] |
+(. | split("=")) as $f |
+[
+  {
+    "op":"add",
+    "path":"/spec/template/spec/containers/0/volumeMounts/-",
+    "value":
+      {
+        "name":"config",
+        "subPath":$f.0,
+        "mountPath":env(STALWART_BASE)+"/"+$f.1
+      }
+  }
+]

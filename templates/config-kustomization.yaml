@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+secretGenerator:
+  - name: litestream-s3
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - ACCESS_KEY_ID=
+      - SECRET_ACCESS_KEY=
+  - name: dkim
+    options:
+      disableNameSuffixHash: true
+    files:
+$DKIM_FILES
+
+configMapGenerator:
+  - name: litestream
+    files:
+      - litestream.yml=litestream.yaml
+  - name: stalwart-bootstrap
+    files:
+$SQLITE_FILES
+  - name: stalwart
+    files:
+$CONFIG_FILES
