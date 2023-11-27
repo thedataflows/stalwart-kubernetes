@@ -2,6 +2,9 @@
 - op: replace
   path: /spec/rules/0/host
   value: run make config
+- op: copy
+  from: /spec/rules/0/host
+  path: /spec/tls/0/hosts/0
 ## Set annotations to use specific oauth2_proxy
 # - op: add
 #   path: /metadata/annotations
