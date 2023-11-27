@@ -2,12 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 secretGenerator:
+  - name: jmap-oauth
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - OAUTH_KEY=$OAUTH_KEY
   - name: litestream-s3
     options:
       disableNameSuffixHash: true
     literals:
-      - ACCESS_KEY_ID=
-      - SECRET_ACCESS_KEY=
+      - ACCESS_KEY_ID=$ACCESS_KEY_ID
+      - SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY
   - name: stalwart-bootstrap
     options:
       disableNameSuffixHash: true

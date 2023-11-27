@@ -47,70 +47,15 @@ Will deploy in a kubernetes cluster:
    - Set `storageClassName` and storage size
    - Enable **litestream** by commenting out the removal of `container/1` in `config/statefulset.patch.yaml`
 7. `git commit -am "Set up stalwart for domain yourdomain.org" && git push`
+   - > Warning: [config/kustomization.yaml](config/kustomization.yaml) contains a `secretGenerator` section that with plain text secrets. Remove it before pushing to a git repository.
 8. Deploy manually: `make install`
    - Will deploy in the current kubernetes context. Assumes `kubectl` is present and a local kuberenes context is configured
    - Alternatively, you can just generate the manifests: `make kustomize` and inspect them in `out/` directory.
 9. Deploy using GitOps (recommended):
 
    - Using your FluxCD git repo (different from this one):
-     - First time: manually create secrets containing
-       - **DKIM** files:
-
-            ```bash
-            kubectl -n stalwart \
-               create secret generic dkim \
-               --from-file=config/dkim \
-               --dry-run=client \
-               -o yaml
-            ```
-
-       - If using **litestream**:
-
-            ```bash
-            kubectl -n stalwart \
-              create secret generic litestream-s3 \
-              --from-literal=ACCESS_KEY_ID=$ACCESS_KEY_ID \
-              --from-literal=SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY \
-              --dry-run=client \
-              -o yaml
-            ```
-
-       - Encrypt the secrets with [SOPS](https://github.com/getsops/sops/) and store them in your gitops repo
-     - Create a `stalwart/kustomization.yaml`:
-
-          ```yaml
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-
-          namespace: &name stalwart
-
-          commonLabels:
-            app.kubernetes.io/name: *name
-            app.kubernetes.io/instance: default
-            app.kubernetes.io/component: mail-server
-
-          resources:
-            - https://github.com/thedataflows/stalwart-kubernetes?ref=v0.1.0
-            - config/
-            - secret.dkim.yaml
-            - secret.litestream-s3.yaml
-            - secret.stalwart-bootstrap.yaml
-
-          patches:
-            - target: &statefulset
-                kind: StatefulSet
-                name: *name
-              path: config/statefulset.patch.yaml
-            - target: *statefulset
-              path: config/volume-mounts.patch.yaml
-            - target:
-                kind: Ingress
-                name: *name
-              path: config/ingress.patch.yaml
-          ```
-
-     - Copy `config/` in your gitops repo
-     - Alternatively, generate manifests with `kubectl kustomize -o out/`, copy the secrets and encrypt them with SOPS. Remove `out/` or exclude it from commit.
+     - In this repo: `make gitops`
+     - Copy `gitops/` to the gitops repoo and encrypt **all** the secrets with [SOPS](https://github.com/getsops/sops/)
 
    - Using [ArgoCD](https://argoproj.github.io/cd/):
      - TODO

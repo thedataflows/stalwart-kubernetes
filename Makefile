@@ -6,7 +6,7 @@ kustomize:
 
 .PHONY: clean
 clean:
-	rm -rf stalwart-install* out/ chart/ config/
+	rm -rf stalwart-install* out/ chart/ config/ gitops/
 	cp templates/kustomization.yaml kustomization.yaml
 
 .PHONY: config
@@ -20,3 +20,7 @@ helm: kustomize
 .PHONY: install
 install: kustomize
 	kubectl apply -f out/
+
+.PHONY: gitops
+gitops: kustomize
+	sh -c ./gitops.sh
