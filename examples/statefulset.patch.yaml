@@ -31,6 +31,14 @@
 #   path: /spec/template/spec/nodeSelector
 #   value:
 #     kubernetes.io/hostname: k8s-node-1
+## Set S3 secret credentials to store mail data if you configured stalwart to use S3
+# - op: add
+#   path: /spec/template/spec/containers/0/envFrom/-
+#   value:
+#     secretRef:
+#       ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
+#       ## Here we reuse the same S3 credentials for litestream to store the mail data
+#       name: litestream-s3
 ## Set stalwart storageClassName to use specific storage class
 # - op: replace
 #   path: /spec/volumeClaimTemplates/0/spec/storageClassName
@@ -41,9 +49,14 @@
 #   value: 20Gi
 ## Disable litestream
 - op: remove
+  path: /spec/template/spec/initContainers/0
+- op: remove
   path: /spec/template/spec/containers/1
-## Set litestream image to specific tag
+## Set litestream images to specific tag
 # - op: replace
-#   path: /spec/template/spec/containers/1/image
+#   path: /spec/template/spec/initContainers/0/image
 #   ## https://hub.docker.com/r/litestream/litestream/tags
 #   value: stalwartlabs/mail-server:0.3.13
+- op: copy
+  from: /spec/template/spec/initContainers/0/image
+  path: /spec/template/spec/containers/1/image

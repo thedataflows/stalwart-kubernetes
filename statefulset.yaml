@@ -13,6 +13,35 @@ spec:
       labels: {}
     spec:
       initContainers:
+        - name: litestream-init
+          image: litestream/litestream:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -ex
+              ## Install required tools
+              apk add yq
+              ## Try to restore databases
+              DATABASES=$(yq '.dbs[].path' /etc/litestream.yml)
+              for db in $DATABASES; do
+                litestream restore -if-db-not-exists -if-replica-exists $db
+              done
+          volumeMounts: &litestreamVolumeMounts
+            - name: mail-data
+              mountPath: /opt/stalwart-mail/data
+            - name: litestream
+              mountPath: /etc/litestream.yml
+              subPath: litestream.yml
+          envFrom: &litestreamEnvFrom
+            - prefix: LITESTREAM_
+              secretRef:
+                ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
+                name: litestream-s3
+          resources: &litestreamResources
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
         - name: mail-server-init
           image: alpine:3.18
           imagePullPolicy: IfNotPresent
@@ -34,6 +63,7 @@ spec:
               done
               ## Copy bootstrap data
               { set +x; } 2>/dev/null
+              echo "Bootstrap data:"
               for f in $(find /tmp/bootstrap -name '*.sqlite3.gz' -type f); do
                 f=${f##*/}
                 DST=/opt/stalwart-mail/data/${f%.*}
@@ -77,9 +107,6 @@ spec:
           env: []
           envFrom:
             - secretRef:
-                ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
-                name: litestream-s3
-            - secretRef:
                 ## kubectl -n stalwart create secret generic jmap-oauth --from-literal=OAUTH_KEY=$(yq '.oauth.key' etc/jmap/oauth.toml)
                 name: jmap-oauth
           resources:
@@ -101,25 +128,13 @@ spec:
         - name: litestream
           image: litestream/litestream:latest
           args:
-            - "replicate"
-          volumeMounts:
-            - name: mail-data
-              mountPath: /opt/stalwart-mail/data
-            - name: litestream
-              mountPath: /etc/litestream.yml
-              subPath: litestream.yml
-          envFrom:
-            - prefix: LITESTREAM_
-              secretRef:
-                ## kubectl -n stalwart create secret generic litestream-s3 --from-literal=ACCESS_KEY_ID=value --from-literal=SECRET_ACCESS_KEY=value
-                name: litestream-s3
+            - replicate
+          volumeMounts: *litestreamVolumeMounts
+          envFrom: *litestreamEnvFrom
+          resources: *litestreamResources
           ports:
             - name: metrics
               containerPort: 9090
-          resources:
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
       restartPolicy: Always
       volumes:
         - name: basedir

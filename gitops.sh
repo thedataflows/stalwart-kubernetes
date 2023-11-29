@@ -21,8 +21,10 @@ sed -E 's,^# ,,g' templates/kustomization.yaml > "$OUTPUT_DIR/kustomization.yaml
 cd "$OUTPUT_DIR"
 { set +x; } 2>/dev/null
 mapfile -t FILES < <(find . -type f -name 'secret.*.yaml' -printf '%f\n')
+# shellcheck disable=SC2089
 printf -v SECRETS '"%s",' "${FILES[@]}"
 set -x
+# shellcheck disable=SC2090
 yq -i '.resources=["https://github.com/thedataflows/stalwart-kubernetes?ref=latest",'$SECRETS'"config/"]' kustomization.yaml
 yq -i 'del(.secretGenerator)' config/kustomization.yaml
 rm -fr config/data config/etc/dkim
