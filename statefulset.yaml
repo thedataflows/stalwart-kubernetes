@@ -53,9 +53,9 @@ spec:
               ## Install required tools
               apk add jq
               ## Deploy spamfilter config
-              [[ "$TAG" == "latest" ]] && TAG=
-              TAG=${TAG:-$(wget https://api.github.com/repos/stalwartlabs/mail-server/releases/latest -O - | jq -r '.tag_name')}
-              wget https://github.com/stalwartlabs/mail-server/raw/$TAG/resources/config.zip
+              [[ "$STALWART_TAG" == "latest" ]] && STALWART_TAG=
+              STALWART_TAG=${STALWART_TAG:-$(wget https://api.github.com/repos/stalwartlabs/mail-server/releases/latest -O - | jq -r '.tag_name')}
+              wget https://github.com/stalwartlabs/mail-server/raw/$STALWART_TAG/resources/config.zip
               unzip -o config.zip spamfilter/* -d /opt/stalwart-mail/etc/
               ## Create directories
               for d in bin data/blobs logs queue reports; do
@@ -76,7 +76,7 @@ spec:
                 fi
               done
           env:
-            - name: TAG
+            - name: STALWART_TAG
               value: latest
           volumeMounts:
             - name: basedir
