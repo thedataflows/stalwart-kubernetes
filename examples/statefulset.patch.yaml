@@ -2,11 +2,12 @@
 # - op: replace
 #   path: /spec/template/spec/containers/0/image
 #   ## https://hub.docker.com/r/stalwartlabs/mail-server/tags
-#   value: stalwartlabs/mail-server:v0.4.2
+#   value: stalwartlabs/mail-server:v0.5.2
 # - op: replace
-#   path: /spec/template/spec/initContainers/0/env/0/value
+#   path: /spec/template/spec/initContainers/1/env/0/value
 #   ## https://github.com/stalwartlabs/mail-server/tags
-#   value: v0.4.2
+#   ## name: STALWART_TAG
+#   value: v0.5.2
 ## Set stalwart affinity to schedule pods on specific nodes
 # - op: add
 #   path: /spec/template/spec/affinity
@@ -47,7 +48,8 @@
 # - op: replace
 #   path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
 #   value: 20Gi
-## Disable litestream
+## Disable litestream.
+## Comment this to enable litestream, uncomment setting image and copying image below
 - op: remove
   path: /spec/template/spec/initContainers/0
 - op: remove
@@ -56,7 +58,7 @@
 # - op: replace
 #   path: /spec/template/spec/initContainers/0/image
 #   ## https://hub.docker.com/r/litestream/litestream/tags
-#   value: stalwartlabs/mail-server:0.3.13
-- op: copy
-  from: /spec/template/spec/initContainers/0/image
-  path: /spec/template/spec/containers/1/image
+#   value: litestream/litestream:0.3.13
+# - op: copy
+#   from: /spec/template/spec/initContainers/0/image
+#   path: /spec/template/spec/containers/1/image
