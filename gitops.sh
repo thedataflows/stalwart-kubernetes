@@ -15,14 +15,18 @@ while IFS= read -r -d '' f; do
   cp -v "out/$f" "$OUTPUT_DIR/${f/v1_secret_/secret.}"
   { set +x; } 2>/dev/null
 done < <(cd out/; find . -type f -name 'v1_secret_*.yaml' -print0)
+
 set -x
 cp -vr config/ "$OUTPUT_DIR"
 sed -E 's,^# ,,g' templates/kustomization.yaml > "$OUTPUT_DIR/kustomization.yaml"
 cd "$OUTPUT_DIR"
 { set +x; } 2>/dev/null
+
 mapfile -t FILES < <(find . -type f -name 'secret.*.yaml' -printf '%f\n')
+
 # shellcheck disable=SC2089
 printf -v SECRETS '"%s",' "${FILES[@]}"
+
 set -x
 # shellcheck disable=SC2090
 yq -i '.resources=["https://github.com/thedataflows/stalwart-kubernetes?ref=latest",'$SECRETS'"config/"]' kustomization.yaml
