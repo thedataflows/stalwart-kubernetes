@@ -2,6 +2,8 @@
 
 set -e -o pipefail -u
 
+trap 'echo "The script exited with error $? on line $LINENO"' ERR
+
 cd "${0%/*}"
 
 OS=${OS:-$(uname -s)}
@@ -46,7 +48,10 @@ rm -fr "$CONFIG_DIR"
 mkdir -p "$CONFIG_DIR"
 
 ## Run installer
-./stalwart-install -c all-in-one -p "$STALWART_CONFIG_DIR/.." -d
+./stalwart-install --component all-in-one --path "$STALWART_CONFIG_DIR/.." --docker
+
+## Get selected store
+STALWART_DEFAULT_STORE=$(yq '.macros.default_store' "$STALWART_CONFIG_DIR/config.toml")
 
 ## Fix paths in toml files
 sed -i -E "s,$STALWART_CONFIG_DIR/\.\.,$STALWART_BASE," "$STALWART_CONFIG_DIR/config.toml"
@@ -64,7 +69,7 @@ sed -i -E -e 's,^([^#]),#\1,g' -e '5,8s/^#//' "$STALWART_CONFIG_DIR/common/traci
 sed -i -E \
   -e 's,^(access-key\s*=\s*).+,\1\!ACCESS_KEY_ID,' \
   -e 's,^(secret-key\s*=\s*).+,\1\!SECRET_ACCESS_KEY,' \
-  "$STALWART_CONFIG_DIR/jmap/store.toml"
+  "$STALWART_CONFIG_DIR/store/s3.toml"
 
 ## Cleanup
 rm -fr \
@@ -72,16 +77,21 @@ rm -fr \
     "${CONFIG_DIR:?}/logs" \
     "${CONFIG_DIR:?}/queue" \
     "${CONFIG_DIR:?}/reports" \
-    "$STALWART_CONFIG_DIR/spamfilter/" \
+    "$STALWART_CONFIG_DIR/acme/" \
     "$STALWART_CONFIG_DIR/certs/" \
-    "$STALWART_CONFIG_DIR/directory/ldap.toml" \
-    "$STALWART_CONFIG_DIR/directory/memory.toml" \
-    "$STALWART_CONFIG_DIR/directory/imap.toml" \
-    "$STALWART_CONFIG_DIR/directory/lmtp.toml"
+    "$STALWART_CONFIG_DIR/spamfilter/"
+
+(
+  cd "$STALWART_CONFIG_DIR";
+  find ./store -type f ! -name "$STALWART_DEFAULT_STORE.toml" ! -name 's3.toml' -print0 | while IFS= read -r -d '' file; do
+    sed -i "/$(basename "$file")/d" config.toml
+    rm -f "$file"
+  done
+)
 
 SQLITE_FILES=$(
   cd "$CONFIG_DIR";
-  gzip -9 data/*.sqlite3;
+  find "data" -name '*.sqlite3' -exec gzip -9 {} \;
   find "data" -name '*.sqlite3.gz' -printf '      - %f=%p\n'
 )
 export SQLITE_FILES

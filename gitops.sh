@@ -2,6 +2,8 @@
 
 set -e -o pipefail -u
 
+trap 'echo "The script exited with error $? on line $LINENO"' ERR
+
 cd "${0%/*}"
 
 set -x
