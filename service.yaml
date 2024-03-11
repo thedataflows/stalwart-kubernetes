@@ -24,7 +24,7 @@ spec:
       port: 4190
       targetPort: sieve
     - name: http
-      port: 8080
+      port: 443
       targetPort: http
     - name: litestream-metrics
       port: 9090

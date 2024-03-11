@@ -75,7 +75,7 @@ spec:
             - name: sieve
               containerPort: 4190
             - name: http
-              containerPort: 8080
+              containerPort: 443
           env: []
           envFrom:
             - secretRef:
