@@ -2,12 +2,12 @@
 # - op: replace
 #   path: /spec/template/spec/containers/0/image
 #   ## https://hub.docker.com/r/stalwartlabs/mail-server/tags
-#   value: stalwartlabs/mail-server:v0.5.2
+#   value: stalwartlabs/mail-server:v0.6.0
 # - op: replace
 #   path: /spec/template/spec/initContainers/1/env/0/value
 #   ## https://github.com/stalwartlabs/mail-server/tags
 #   ## name: STALWART_TAG
-#   value: v0.5.2
+#   value: v0.6.0
 ## Set stalwart affinity to schedule pods on specific nodes
 # - op: add
 #   path: /spec/template/spec/affinity
